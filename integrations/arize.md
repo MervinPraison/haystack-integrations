@@ -25,9 +25,11 @@ toc: true
 
 ## Overview
 
-Arize is AI Observability and Evaluation platform designed to help you troubleshoot, evaluate, and experiment on LLM and ML applications. Developers use Arize to get applications working quickly, evaluate performance, detect and prevent production issues, and curate datasets.
+[Arize AI](https://arize.com/?utm_source=haystack-docs&utm_medium=partner&utm_campaign=partner-docs&utm_content=integrations-arize) helps teams observe, evaluate, and improve LLM applications and AI agents. Use [Arize AX](https://arize.com/products/ax/) for the full-featured platform built for production teams, AI-native companies, and enterprises, available as managed cloud or enterprise self-hosted deployment. Use [Arize Phoenix](https://arize.com/phoenix/) when you need an open-source workflow for local development, experimentation, or self-hosting.
 
-- [Documentation for Arize AI + Haystack](https://docs.arize.com/arize/large-language-models/tracing/auto-instrumentation/haystack)
+Arize's [agent evaluation guide](https://arize.com/guides/ai-agent-handbook/agent-evaluation/) and [LLM evaluation guide](https://arize.com/resources/llm-evaluation/) show how traces can support debugging, evaluation, and continuous quality monitoring.
+
+- [Documentation for Arize AX + Haystack](https://arize.com/docs/ax/integrations/python-agent-frameworks/haystack/haystack-tracing)
 
 ## Installation
 
@@ -62,7 +64,7 @@ Now, you can run a Haystack pipeline within the same environment, resulting in t
 ```python
 from haystack import Document, Pipeline
 from haystack.components.builders.prompt_builder import PromptBuilder
-from haystack.components.generators import OpenAIGenerator
+from haystack.components.generators.chat import OpenAIChatGenerator
 from haystack.components.retrievers.in_memory import InMemoryBM25Retriever
 from haystack.document_stores.in_memory import InMemoryDocumentStore
 
@@ -85,7 +87,7 @@ Answer:
 
 retriever = InMemoryBM25Retriever(document_store=document_store)
 prompt_builder = PromptBuilder(template=prompt_template)
-llm = OpenAIGenerator()
+llm = OpenAIChatGenerator()
 
 rag_pipeline = Pipeline()
 rag_pipeline.add_component("retriever", retriever)

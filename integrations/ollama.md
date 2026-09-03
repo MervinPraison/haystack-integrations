@@ -30,13 +30,14 @@ toc: true
 - [Installation](#installation)
 - [Usage](#usage)
   - [Examples](#examples)
-    - [Text Generation](#text-generation)
+    - [RAG Pipeline](#rag-pipeline)
     - [Chat Generation](#chat-generation)
+    - [Tool Calling](#tool-calling)
     - [Document and Text Embedders](#embedders)
 
 ## Introduction
 
-You can use [Ollama Models](https://ollama.ai/library) in your Haystack pipelines with the OllamaGenerator.
+You can use [Ollama Models](https://ollama.ai/library) in your Haystack pipelines with the `OllamaChatGenerator`.
 
 [Ollama](https://ollama.ai/) is a project focused on running Large Language Models locally. Internally it uses the quantized GGUF format by default. This means it is possible to run LLMs on standard machines (even without GPUs), without having to handle complex installation procedures.
 
@@ -48,8 +49,7 @@ pip install ollama-haystack
 
 ## Usage
 
-This integration provides 4 components that allow you to leverage Ollama models:
-- The [`OllamaGenerator`](https://docs.haystack.deepset.ai/docs/ollamagenerator)
+This integration provides 3 components that allow you to leverage Ollama models:
 - The [`OllamaChatGenerator`](https://docs.haystack.deepset.ai/docs/ollamachatgenerator)
 - The [`OllamaTextEmbedder`](https://docs.haystack.deepset.ai/docs/ollamatextembedder)
 - The [`OllamaDocumentEmbedder`](https://docs.haystack.deepset.ai/docs/ollamadocumentembedder)
@@ -57,7 +57,7 @@ This integration provides 4 components that allow you to leverage Ollama models:
 To use an Ollama model:
 
 1. Follow instructions on the [Ollama Github Page](https://github.com/jmorganca/ollama) to pull and serve your model of choice 
-2. Initialize one of the Ollama generators with the name of the model served in your Ollama instance. 
+2. Initialize `OllamaChatGenerator` with the name of the model served in your Ollama instance. 
 
 
 ### Examples
@@ -69,9 +69,9 @@ docker run -d -p 11434:11434 --name ollama ollama/ollama:latest
 docker exec ollama ollama pull orca-mini
 ```
 
-#### Text Generation
+#### RAG Pipeline
 
-Below is the example of generative questions-answering pipeline using RAG with `PromptBuilder` and  `OllamaGenerator`:
+Below is the example of generative questions-answering pipeline using RAG with `PromptBuilder` and `OllamaChatGenerator`:
 
 ```python
 from haystack import Document, Pipeline
@@ -79,7 +79,7 @@ from haystack.components.builders.prompt_builder import PromptBuilder
 from haystack.components.retrievers.in_memory import InMemoryBM25Retriever
 from haystack.document_stores.in_memory import InMemoryDocumentStore
 
-from haystack_integrations.components.generators.ollama import OllamaGenerator
+from haystack_integrations.components.generators.ollama import OllamaChatGenerator
 
 document_store = InMemoryDocumentStore()
 document_store.write_documents(
@@ -109,7 +109,7 @@ pipe = Pipeline()
 
 pipe.add_component("retriever", InMemoryBM25Retriever(document_store=document_store))
 pipe.add_component("prompt_builder", PromptBuilder(template=template))
-pipe.add_component("llm", OllamaGenerator(model="orca-mini", url="http://localhost:11434"))
+pipe.add_component("llm", OllamaChatGenerator(model="orca-mini", url="http://localhost:11434"))
 pipe.connect("retriever", "prompt_builder.documents")
 pipe.connect("prompt_builder", "llm")
 
@@ -117,14 +117,14 @@ query = "Who is Super Mario?"
 
 response = pipe.run({"prompt_builder": {"query": query}, "retriever": {"query": query}})
 
-print(response["llm"]["replies"])
+print(response["llm"]["replies"][0].text)
 ```
 You should receive an output like (output is not deterministic):
 ```
-['Based on the information provided, Super Mario is a successful military leader who fought
+Based on the information provided, Super Mario is a successful military leader who fought
 off several invasion attempts by his arch rival - Bowser. He is also an important politician and owns several
-castles where he conducts political business. ' 'Therefore, it can be inferred that Super Mario is a combination of
-both a military leader and an important politician.']
+castles where he conducts political business. Therefore, it can be inferred that Super Mario is a combination of
+both a military leader and an important politician.
 ```
 
 #### Chat Generation
@@ -163,6 +163,42 @@ Natural Language Processing (NLP) is a complex field with many different tools a
 4. Practice: The best way to learn NLP is by practicing. Start with simple tasks like sentiment analysis or tokenization and work your way up to more complex ones like machine translation
 
 ```
+
+#### Tool Calling
+
+`OllamaChatGenerator` supports tool calling natively. Pass `Tool` instances via the `tools` parameter; the generator returns `ToolCall` entries on `replies[0].tool_calls` when the model decides to invoke a tool.
+
+For reliable tool-call emission with Llama 3.1 8B, set `temperature=0.0` and use a directive prompt that names the tool.
+
+```python
+from haystack.dataclasses import ChatMessage
+from haystack.tools import tool
+from haystack_integrations.components.generators.ollama import OllamaChatGenerator
+
+
+@tool
+def get_weather(city: str) -> str:
+    """Get current weather for a city."""
+    return f"Sunny, 22°C in {city}"
+
+
+generator = OllamaChatGenerator(
+    model="llama3.1:8b",
+    generation_kwargs={"temperature": 0.0},
+    tools=[get_weather],
+)
+
+response = generator.run(
+    messages=[ChatMessage.from_user(
+        "What's the weather in Berlin? Use the get_weather tool."
+    )]
+)
+print(response["replies"][0].tool_calls)
+# -> [ToolCall(tool_name='get_weather', arguments={'city': 'Berlin'}, ...)]
+```
+
+Tool execution and multi-turn tool-result handling are covered in the [`OllamaChatGenerator` component reference](https://docs.haystack.deepset.ai/docs/ollamachatgenerator).
+
 #### Embedders
 
 - `OllamaDocumentEmbedder` helps compute embeddings for a list of Documents and updates each Document's embedding field with its embedding vector.

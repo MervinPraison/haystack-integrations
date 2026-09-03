@@ -25,7 +25,7 @@ toc: true
 
 ## Overview
 
-You can use [OpenAI Models](https://openai.com/) in your Haystack pipelines with the [Generators](https://docs.haystack.deepset.ai/docs/generators), [Embedders](https://docs.haystack.deepset.ai/docs/embedders), [LocalWhisperTranscriber](https://docs.haystack.deepset.ai/docs/localwhispertranscriber) and [RemoteWhisperTranscriber](https://docs.haystack.deepset.ai/docs/remotewhispertranscriber).
+You can use [OpenAI Models](https://openai.com/) in your Haystack pipelines with the [Generators](https://docs.haystack.deepset.ai/docs/generators) and [Embedders](https://docs.haystack.deepset.ai/docs/embedders). Check out the [Whisper Integration](https://haystack.deepset.ai/integrations/whisper) for [LocalWhisperTranscriber](https://docs.haystack.deepset.ai/docs/localwhispertranscriber) and [RemoteWhisperTranscriber](https://docs.haystack.deepset.ai/docs/remotewhispertranscriber).
 
 ## Installation
 
@@ -68,18 +68,18 @@ indexing_pipeline.run({"embedder": {"documents": documents}})
 
 ### Generative Models (LLMs)
 
-You can leverage OpenAI models through two components: [OpenAIGenerator](https://docs.haystack.deepset.ai/docs/openaigenerator) and [OpenAIChatGenerator](https://docs.haystack.deepset.ai/docs/openaichatgenerator).
+You can leverage OpenAI models through the [OpenAIChatGenerator](https://docs.haystack.deepset.ai/docs/openaichatgenerator) component.
 
-To use OpenAI's GPT models for text generation, initialize a `OpenAIGenerator` with the model name and OpenAI API key. You can then use the `OpenAIGenerator` instance in a question answering pipeline after the `PromptBuilder`.  
+To use OpenAI's GPT models for text generation, initialize an `OpenAIChatGenerator` with the model name and OpenAI API key. You can then use the `OpenAIChatGenerator` instance in a question answering pipeline after the `PromptBuilder`.  
 
-Below is the example of generative questions answering pipeline using RAG with `PromptBuilder` and  `OpenAIGenerator`:
+Below is the example of generative questions answering pipeline using RAG with `PromptBuilder` and `OpenAIChatGenerator`:
 
 ```python
 from haystack import Pipeline
 from haystack.utils import Secret
 from haystack.components.retrievers.in_memory import InMemoryBM25Retriever
 from haystack.components.builders.prompt_builder import PromptBuilder
-from haystack.components.generators import OpenAIGenerator
+from haystack.components.generators.chat import OpenAIChatGenerator
 from haystack.document_stores.in_memory import InMemoryDocumentStore
 from haystack import Document
 
@@ -102,7 +102,7 @@ pipe = Pipeline()
 
 pipe.add_component("retriever", InMemoryBM25Retriever(document_store=docstore))
 pipe.add_component("prompt_builder", PromptBuilder(template=template))
-pipe.add_component("llm", OpenAIGenerator(api_key=Secret.from_token("YOUR_OPENAI_API_KEY")))
+pipe.add_component("llm", OpenAIChatGenerator(api_key=Secret.from_token("YOUR_OPENAI_API_KEY")))
 pipe.connect("retriever", "prompt_builder.documents")
 pipe.connect("prompt_builder", "llm")
 
@@ -115,38 +115,9 @@ res=pipe.run({
     }
 })
 
-print(res)   
+print(res["llm"]["replies"][0].text)
 ```
 
 ### Transcriber Models
 
-To use Whisper models from OpenAI, initialize a `LocalWhisperTranscriber` or `RemoteWhisperTranscriber` based on hosting options. To use Whisper locally, install it following the instructions on the Whisper [GitHub repo](https://github.com/openai/whisper). To use the OpenAI API, provide an API key. You can then use the suitable component to transcribe audio files.
-
-Below is the example of indexing pipeline with `LocalWhisperTranscriber`. If you'd like to run the Whisper model locally, you need to install two additional packages:
-
-```bash
-pip install transformers[torch]
-pip install -U openai-whisper
-```
-
-```python
-from pathlib import Path
-from haystack import Pipeline
-from haystack.components.audio import LocalWhisperTranscriber
-from haystack.components.preprocessors import DocumentSplitter, DocumentCleaner
-from haystack.components.writers import DocumentWriter
-from haystack.document_stores.in_memory import InMemoryDocumentStore
-
-document_store = InMemoryDocumentStore()
-pipeline = Pipeline()
-pipeline.add_component(instance=LocalWhisperTranscriber(model="small"), name="transcriber")
-pipeline.add_component(instance=DocumentCleaner(), name="cleaner")
-pipeline.add_component(instance=DocumentSplitter(), name="splitter")
-pipeline.add_component(instance=DocumentWriter(document_store=document_store), name="writer")
-
-pipeline.connect("transcriber.documents", "cleaner.documents")
-pipeline.connect("cleaner.documents", "splitter.documents")
-pipeline.connect("splitter.documents", "writer.documents")
-
-pipeline.run({"transcriber": {"audio_files": list(Path("path/to/audio/folder").iterdir())}})
-```
+To use Whisper models from OpenAI for audio transcription, see the [Whisper Integration](https://haystack.deepset.ai/integrations/whisper). It provides `LocalWhisperTranscriber` (runs Whisper on your machine) and `RemoteWhisperTranscriber` (uses the OpenAI Whisper API).

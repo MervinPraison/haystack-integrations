@@ -26,9 +26,11 @@ toc: true
 
 ## Overview
 
-**Arize Phoenix** is Arize's open-source platform that offers developers the quickest way to troubleshoot, evaluate, and experiment with LLM applications.
+**Arize Phoenix** is the open-source observability and evaluation platform from [Arize AI](https://arize.com/?utm_source=haystack-docs&utm_medium=partner&utm_campaign=partner-docs&utm_content=integrations-arize-phoenix). Use it to trace, evaluate, and experiment with LLM applications and AI agents in local, OSS, or self-hosted workflows.
 
-For a detailed integration guide, see the [documentation for Phoenix + Haystack](https://docs.arize.com/phoenix/tracing/integrations-tracing/haystack)
+For the full-featured production platform built for AI-native teams and enterprises, use [Arize AX](https://arize.com/products/ax/), available as managed cloud or enterprise self-hosted deployment. The Arize [agent evaluation guide](https://arize.com/guides/ai-agent-handbook/agent-evaluation/) and [LLM evaluation guide](https://arize.com/resources/llm-evaluation/) cover how trace data becomes eval datasets, judge scores, and quality signals.
+
+For a detailed integration guide, see the [documentation for Phoenix + Haystack](https://arize.com/docs/phoenix/integrations/python/haystack/haystack-tracing).
 
 ## Installation
 
@@ -66,7 +68,7 @@ Now, you can run a Haystack pipeline within the same environment, resulting in t
 ```python
 from haystack import Document, Pipeline
 from haystack.components.builders.prompt_builder import PromptBuilder
-from haystack.components.generators import OpenAIGenerator
+from haystack.components.generators.chat import OpenAIChatGenerator
 from haystack.components.retrievers.in_memory import InMemoryBM25Retriever
 from haystack.document_stores.in_memory import InMemoryDocumentStore
 
@@ -89,7 +91,7 @@ Answer:
 
 retriever = InMemoryBM25Retriever(document_store=document_store)
 prompt_builder = PromptBuilder(template=prompt_template)
-llm = OpenAIGenerator()
+llm = OpenAIChatGenerator()
 
 rag_pipeline = Pipeline()
 rag_pipeline.add_component("retriever", retriever)
@@ -110,6 +112,6 @@ results = rag_pipeline.run(
 ## Resources
 
 - Check out the Phoenix [GitHub repository](https://github.com/Arize-ai/phoenix)
-- For an in-depth guide on how to host your own Phoenix instance, see the [Phoenix documentation](https://docs.arize.com/phoenix/deployment)
-- Try out free hosted Phoenix instances at [phoenix.arize.com](https://phoenix.arize.com/)
-- Check out the [Phoenix documentation](https://docs.arize.com/phoenix)
+- For an in-depth guide on how to host your own Phoenix instance, see the [Phoenix documentation](https://arize.com/docs/phoenix/deployment)
+- Learn more at [Arize Phoenix](https://arize.com/phoenix/)
+- Check out the [Phoenix documentation](https://arize.com/docs/phoenix)
